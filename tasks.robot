@@ -6,6 +6,8 @@ Library     RPA.Tables
 Library     RPA.PDF
 Library     RPA.Archive
 Library     RPA.FileSystem
+Library     RPA.RobotLogListener
+Suite Teardown    Close All Browsers
 
 
 # +
@@ -17,6 +19,9 @@ ${GLOBAL_WAIT_SIZE_XL}=      60s
 
 ${url}=  https://robotsparebinindustries.com/
 ${url_download_input_file}=     https://robotsparebinindustries.com/orders.csv
+
+${GLOBAL_RETRY_AMOUNT}=    3x
+${GLOBAL_RETRY_INTERVAL}=    0.5s
 # -
 
 *** Keywords ***
@@ -51,7 +56,8 @@ Preview the robot
 
 *** Keywords ***
 Submit the order
-    Click Button    id:order
+    #Click Button    id:order
+    Execute Javascript    document.getElementById('order').click()
     Wait Until Element Is Visible    id:receipt    ${GLOBAL_WAIT_SIZE_M}
 
 *** Keywords ***
@@ -87,7 +93,7 @@ Create a ZIP file of the receipts
     FOR    ${file}  IN  @{FILES}
         Run keyword if    ${file.name} = output    Remove file    ${file}
     END
-
+    Remove Files
 *** Tasks ***
 Order robots from RobotSpareBin Industries Inc
     Open the robot order website
@@ -97,7 +103,7 @@ Order robots from RobotSpareBin Industries Inc
         Close the annoying modal
         Fill the form  ${row}
         Preview the robot
-        Submit the order
+        Wait Until Keyword Succeeds    ${GLOBAL_RETRY_AMOUNT}    ${GLOBAL_RETRY_INTERVAL}    Submit the order
         ${pdf}=    Store the receipt as a PDF file    ${row}[Order number]
         Log    ${pdf}
         ${screenshot}=    Take a screenshot of the robot    ${row}[Order number]
