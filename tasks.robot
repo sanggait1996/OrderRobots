@@ -6,6 +6,11 @@ Library     RPA.Tables
 Library     RPA.PDF
 Library     RPA.Archive
 Library     RPA.FileSystem
+Library     RPA.RobotLogListener
+Library     RPA.Dialogs
+Library     RPA.Robocorp.Vault
+
+
 
 
 # +
@@ -17,11 +22,18 @@ ${GLOBAL_WAIT_SIZE_XL}=      60s
 
 ${url}=  https://robotsparebinindustries.com/
 ${url_download_input_file}=     https://robotsparebinindustries.com/orders.csv
+
+${GLOBAL_RETRY_AMOUNT}=    5x
+${GLOBAL_RETRY_INTERVAL}=    0.5s
 # -
 
 *** Keywords ***
 Open the robot order website
-    Open Chrome Browser    ${url}
+    ${secret} =     Get Secret    globalvariable
+    ${secretCredential} =     Get Secret    credenditals
+    Log    ${secretCredential}[username]
+    Log    ${secretCredential}[password]
+    Open Chrome Browser    ${secret}[url]
     Maximize Browser Window
     Wait Until Element Is Visible    id:username    ${GLOBAL_WAIT_SIZE_XL}
     Click Element   css:LI.nav-item:nth-child(2)
@@ -51,7 +63,8 @@ Preview the robot
 
 *** Keywords ***
 Submit the order
-    Click Button    id:order
+    #Click Button    id:order
+    Execute Javascript    document.getElementById('order').click()
     Wait Until Element Is Visible    id:receipt    ${GLOBAL_WAIT_SIZE_M}
 
 *** Keywords ***
@@ -83,10 +96,13 @@ Go to order another robot
 *** Keywords ***
 Create a ZIP file of the receipts
     Archive Folder With Zip    ${CURDIR}${/}output${/}   ${CURDIR}${/}output${/}output.zip
-    ${files}=    List files in directory    ${CURDIR}${/}output${/}
-    FOR    ${file}  IN  @{FILES}
-        Run keyword if    ${file.name} = output    Remove file    ${file}
-    END
+    #${files}=    List files in directory    ${CURDIR}${/}output${/}
+    #FOR    ${FILE}  IN  ${files}
+    #    Run keyword if    ${FILE.name} != output.zip    Remove file    ${file}
+    #END
+    #Remove Files
+
+*** Keywords ***
 
 *** Tasks ***
 Order robots from RobotSpareBin Industries Inc
@@ -97,7 +113,7 @@ Order robots from RobotSpareBin Industries Inc
         Close the annoying modal
         Fill the form  ${row}
         Preview the robot
-        Submit the order
+        Wait Until Keyword Succeeds    ${GLOBAL_RETRY_AMOUNT}    ${GLOBAL_RETRY_INTERVAL}    Submit the order
         ${pdf}=    Store the receipt as a PDF file    ${row}[Order number]
         Log    ${pdf}
         ${screenshot}=    Take a screenshot of the robot    ${row}[Order number]
