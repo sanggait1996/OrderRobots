@@ -29,6 +29,10 @@ ${GLOBAL_RETRY_INTERVAL}=    0.5s
 
 *** Keywords ***
 Open the robot order website
+    Add heading   Send Feedback 
+    Add text input    anwser    label=Do you like Robocorp?
+    ${result}=      Run dialog
+    Log     ${result}
     ${secret} =     Get Secret    globalvariable
     ${secretCredential} =     Get Secret    credenditals
     Log    ${secretCredential}[username]
